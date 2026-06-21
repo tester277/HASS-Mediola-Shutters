@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEVICE_TYPE_ER, DEVICE_TYPE_WR, DOMAIN
+from .const import DEVICE_TYPE_ER, DEVICE_TYPE_RT, DEVICE_TYPE_WR, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 

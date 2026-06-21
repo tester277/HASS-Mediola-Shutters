@@ -7,8 +7,10 @@ from typing import List, Dict, Any, Optional
 from .const import (
     DEVICE_TYPE_WR,
     DEVICE_TYPE_ER,
+    DEVICE_TYPE_RT,
     MANUFACTURER_WIR,
     MANUFACTURER_ELERO,
+    MANUFACTURER_SOMFY,
     MANUFACTURER_UNKNOWN,
     ELERO_STATE_OPEN,
     ELERO_STATE_CLOSED,
@@ -18,6 +20,9 @@ from .const import (
     ELERO_CMD_UP,
     ELERO_CMD_DOWN,
     ELERO_CMD_STOP,
+    RT_CMD_UP,
+    RT_CMD_DOWN,
+    RT_CMD_STOP,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,9 +66,8 @@ class MediolaAPI:
             # Filter only shutter devices (type "WR" or "ER")
             shutters = [
                 d for d in devices 
-                if d.get("type") in [DEVICE_TYPE_WR, DEVICE_TYPE_ER]
-            ]
-            
+                if d.get("type") in [DEVICE_TYPE_WR, DEVICE_TYPE_ER, DEVICE_TYPE_RT]
+                         ]
             return shutters
             
         except requests.exceptions.RequestException as err:
@@ -86,6 +90,8 @@ class MediolaAPI:
             return MANUFACTURER_WIR
         elif device_type == DEVICE_TYPE_ER:
             return MANUFACTURER_ELERO
+        elif device_type == DEVICE_TYPE_RT:
+            return MANUFACTURER_SOMFY
         else:
             return MANUFACTURER_UNKNOWN
 
@@ -130,8 +136,8 @@ class MediolaAPI:
         Returns:
             True if command was successful
         """
-        # Command format: 01 + adr + 010101
-        command = f"01{adr}010101"
+        # Command format: 01 + adr + 0101
+        command = f"01{adr}0101"
         return self.send_command(DEVICE_TYPE_WR, adr, command)
 
     def close_wir_shutter(self, sid: str, adr: str) -> bool:
@@ -144,8 +150,8 @@ class MediolaAPI:
         Returns:
             True if command was successful
         """
-        # Command format: 01 + adr + 010102
-        command = f"01{adr}010102"
+        # Command format: 01 + adr + 0102
+        command = f"01{adr}0102"
         return self.send_command(DEVICE_TYPE_WR, adr, command)
 
     def stop_wir_shutter(self, sid: str, adr: str) -> bool:
@@ -158,8 +164,8 @@ class MediolaAPI:
         Returns:
             True if command was successful
         """
-        # Command format: 01 + adr + 010103
-        command = f"01{adr}010103"
+        # Command format: 01 + adr + 0103
+        command = f"01{adr}0103"
         return self.send_command(DEVICE_TYPE_WR, adr, command)
 
     def set_wir_shutter_position(self, sid: str, adr: str, position: int) -> bool:
@@ -232,6 +238,41 @@ class MediolaAPI:
         command = f"{adr}{ELERO_CMD_STOP}"
         return self.send_command(DEVICE_TYPE_ER, adr, command)
 
+    # Somfy RT (Type RT) specific methods
+    def open_rt_shutter(self, sid: str, adr: str) -> bool:
+        """Open a Somfy RT shutter completely.
+
+        Args:
+            sid: Shutter ID
+            adr: Address/device id of the shutter (e.g., "xxxxx")
+
+        Returns:
+            True if command was successful
+
+        Example:
+            data=20xxxxx
+        """
+        command = f"{RT_CMD_UP}{adr}"
+        return self.send_command(DEVICE_TYPE_RT, adr, command)
+
+    def close_rt_shutter(self, sid: str, adr: str) -> bool:
+        """Close a Somfy RT shutter completely.
+
+        Example:
+            data=40xxxxx
+        """
+        command = f"{RT_CMD_DOWN}{adr}"
+        return self.send_command(DEVICE_TYPE_RT, adr, command)
+
+    def stop_rt_shutter(self, sid: str, adr: str) -> bool:
+        """Stop a Somfy RT shutter.
+
+        Example:
+            data=10xxxxx
+        """
+        command = f"{RT_CMD_STOP}{adr}"
+        return self.send_command(DEVICE_TYPE_RT, adr, command)
+
     # Unified interface methods
     def open_shutter(self, device_type: str, sid: str, adr: str) -> bool:
         """Open a shutter (works for both WIR and Elero).
@@ -248,6 +289,8 @@ class MediolaAPI:
             return self.open_wir_shutter(sid, adr)
         elif device_type == DEVICE_TYPE_ER:
             return self.open_elero_shutter(sid, adr)
+        elif device_type == DEVICE_TYPE_RT:
+            return self.open_rt_shutter(sid, adr)
         else:
             _LOGGER.error("Unknown device type: %s", device_type)
             return False
@@ -267,6 +310,8 @@ class MediolaAPI:
             return self.close_wir_shutter(sid, adr)
         elif device_type == DEVICE_TYPE_ER:
             return self.close_elero_shutter(sid, adr)
+        elif device_type == DEVICE_TYPE_RT:
+            return self.close_rt_shutter(sid, adr)
         else:
             _LOGGER.error("Unknown device type: %s", device_type)
             return False
@@ -286,6 +331,8 @@ class MediolaAPI:
             return self.stop_wir_shutter(sid, adr)
         elif device_type == DEVICE_TYPE_ER:
             return self.stop_elero_shutter(sid, adr)
+        elif device_type == DEVICE_TYPE_RT:
+            return self.stop_rt_shutter(sid, adr)
         else:
             _LOGGER.error("Unknown device type: %s", device_type)
             return False
@@ -308,6 +355,9 @@ class MediolaAPI:
             return self.set_wir_shutter_position(sid, adr, position)
         elif device_type == DEVICE_TYPE_ER:
             _LOGGER.warning("Elero shutters do not support position setting")
+            return False
+        elif device_type == DEVICE_TYPE_RT:
+            _LOGGER.warning("Somfy RT shutters do not support position setting")
             return False
         else:
             _LOGGER.error("Unknown device type: %s", device_type)
@@ -380,6 +430,9 @@ class MediolaAPI:
             return self.parse_wir_position(state)
         elif device_type == DEVICE_TYPE_ER:
             return self.parse_elero_position(state)
+        elif device_type == DEVICE_TYPE_RT:
+            # RTS shutters don't report any position/state via the gateway
+            return None
         else:
             _LOGGER.error("Unknown device type: %s", device_type)
             return None
