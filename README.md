@@ -18,8 +18,8 @@ Diese Integration ermöglicht die Steuerung von Rollos über ein Mediola Gateway
 
 ## Bekannste Probleme
 Die Integration wurde mit Rollos der Firma WiR erstellt, diese erzeugen einen Device-Code "WR", an diesem filtert die Integration Rollos aus. Wenn ihr Rollos anderer Hersteller benutzt, wird der Code ein anderer sein. Ihr könnt im Browser diese URL aufrufen: http://(mediola-ip)/command?XC_USER=user&XC_PASS=(passwort)&XC_FNC=GetStates
-Weiterhin werden Rollos der Firma Elero unterstützt. Die Unterstützung ist gegenwärtig experimentell und noch nicht vollständig getestet.
-In der Antwort könnt ihr hinter "Type" das Herstellerkürzel sehen. Dieses muss in der const.py ausgetauscht werden. Bitte lasst mich wissen, wenn ihr es mit einem anderen Hersteller testen konntet und lasst mich den Type des Herstellers wissen, dann kann ich die Integration entsprechend erweitern.
+Weiterhin werden Rollos der Firma Elero und Sonfy unterstützt. Die Unterstützung ist gegenwärtig experimentell und noch nicht vollständig getestet.
+In der Antwort könnt ihr hinter "Type" das Herstellerkürzel sehen. Dieses muss in der const.py ausgetauscht werden.
 
 ## 🚀 Installation
 
