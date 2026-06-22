@@ -94,6 +94,13 @@ class MediolaCover(CoordinatorEntity, CoverEntity):
                 state = shutter.get("state", "")
                 device_type = shutter.get("type")
                 
+                # RT: use pseudo position from coordinator memory
+                if device_type == DEVICE_TYPE_RT:
+                    mediola_pos = self.coordinator.rt_positions.get(self._sid)
+                    if mediola_pos is None:
+                        return None
+                    return 100 - mediola_pos  # Invert: Mediola 0=open → HA 100
+                
                 position = self.coordinator.api.parse_position(device_type, state)
                 
                 if position is None:
@@ -140,6 +147,9 @@ class MediolaCover(CoordinatorEntity, CoverEntity):
         await self.hass.async_add_executor_job(
             self.coordinator.api.open_shutter, self._device_type, self._sid, self._adr
         )
+        if self._device_type == DEVICE_TYPE_RT:
+            self.coordinator.rt_positions[self._sid] = 0  # Mediola 0 = fully open
+            self.async_write_ha_state()
         # Request data update
         await self.coordinator.async_request_refresh()
 
@@ -148,6 +158,9 @@ class MediolaCover(CoordinatorEntity, CoverEntity):
         await self.hass.async_add_executor_job(
             self.coordinator.api.close_shutter, self._device_type, self._sid, self._adr
         )
+        if self._device_type == DEVICE_TYPE_RT:
+            self.coordinator.rt_positions[self._sid] = 100  # Mediola 100 = fully closed
+            self.async_write_ha_state()
         # Request data update
         await self.coordinator.async_request_refresh()
 
@@ -156,6 +169,10 @@ class MediolaCover(CoordinatorEntity, CoverEntity):
         await self.hass.async_add_executor_job(
             self.coordinator.api.stop_shutter, self._device_type, self._sid, self._adr
         )
+        if self._device_type == DEVICE_TYPE_RT:
+            # Assume 50% position after stop (RTS has no feedback)
+            self.coordinator.rt_positions[self._sid] = 50
+            self.async_write_ha_state()  # push new position to UI immediately
         # Request data update
         await self.coordinator.async_request_refresh()
 

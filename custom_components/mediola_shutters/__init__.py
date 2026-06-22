@@ -223,6 +223,11 @@ class MediolaDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self.api = api
 
+        # Pseudo position tracking for RT (Somfy) shutters
+        # Key: sid, Value: position in Mediola logic (0=open, 100=closed)
+        # None = unknown (e.g. after stop or first start)
+        self.rt_positions: dict[str, int | None] = {}
+
     async def _async_update_data(self):
         """Fetch data from Mediola gateway."""
         try:
