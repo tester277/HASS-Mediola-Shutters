@@ -20,15 +20,15 @@ CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 15
 
 # Elero state codes
-ELERO_STATE_OPEN = "1001"  # Fully open
-ELERO_STATE_CLOSED = "1002"  # Fully closed
-ELERO_STATE_INTERMEDIATE = "100D"  # Somewhere in between
-ELERO_STATE_MOVING_UP = "100A"  # Moving upwards
-ELERO_STATE_MOVING_DOWN = "100B"  # Moving downwards
+ELERO_STATE_OPEN = "2001"  # Fully open - was "1001"
+ELERO_STATE_CLOSED = "2002"  # Fully closed - was "1002"
+ELERO_STATE_INTERMEDIATE = "200D"  # Somewhere in between - was "100D"
+ELERO_STATE_MOVING_UP = "200A"  # Moving upwards - was "100A"
+ELERO_STATE_MOVING_DOWN = "200B"  # Moving downwards - was "100B"
 
 # Elero commands
-ELERO_CMD_UP = "08"  # Open/Up
-ELERO_CMD_DOWN = "09"  # Close/Down
+ELERO_CMD_UP = "01"  # Open/Up
+ELERO_CMD_DOWN = "00"  # Close/Down
 ELERO_CMD_STOP = "02"  # Stop
 
 # Somfy RT commands (prefix before the device id)
