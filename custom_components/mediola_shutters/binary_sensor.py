@@ -8,6 +8,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -24,7 +25,6 @@ async def async_setup_entry(
     """Set up Mediola binary sensor entities from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Create binary sensor entities for each shutter
     entities = []
     for shutter in coordinator.data:
         entities.append(MediolaOpeningSensor(coordinator, shutter, entry))
@@ -43,16 +43,12 @@ class MediolaOpeningSensor(CoordinatorEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self._shutter_data = shutter_data
         self._entry = entry
-        
-        # Extract shutter information
+
         self._sid = shutter_data.get("sid")
         self._adr = shutter_data.get("adr")
         self._device_type = shutter_data.get("type")
-        
-        # Unique ID for this entity
+
         self._attr_unique_id = f"{entry.entry_id}_opening_{self._sid}"
-        
-        # Entity name
         self._attr_name = "Opening"
 
     @property
@@ -60,33 +56,38 @@ class MediolaOpeningSensor(CoordinatorEntity, BinarySensorEntity):
         """Return device information about this shutter."""
         manufacturer = self.coordinator.api.get_manufacturer(self._device_type)
         model = f"{self._device_type} Shutter"
-        
-        return {
+
+        # Look up the gateway device's registry ID for via_device_id
+        device_registry = dr.async_get(self.hass)
+        gateway_device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, self._entry.entry_id),
+            self._entry.entry_id
+        )
+        gateway_id = gateway_device.id if gateway_device else None
+
+        info = {
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_{self._sid}")},
             "name": f"Shutter {self._sid}",
             "manufacturer": manufacturer,
             "model": model,
-            "via_device": (DOMAIN, self._entry.entry_id),
         }
+        if gateway_id:
+            info["via_device_id"] = gateway_id
+
+        return info
 
     @property
     def is_on(self) -> Optional[bool]:
-        """Return true if the shutter is open.
-        
-        For opening sensor: True = open, False = closed.
-        """
-        # Find current shutter data in coordinator
+        """Return true if the shutter is open (True=open, False=closed)."""
         for shutter in self.coordinator.data:
             if shutter.get("sid") == self._sid:
                 state = shutter.get("state", "")
                 device_type = shutter.get("type")
                 position = self.coordinator.api.parse_position(device_type, state)
-                
+
                 if position is None:
-                    # If position is unknown (e.g., moving), return None
                     return None
-                
-                # If position is 0, shutter is fully open (True)
-                # If position is greater than 0, shutter is at least partially closed (False)
+
+                # position 0 = fully open → True (opening sensor on)
                 return position == 0
         return None
