@@ -7,12 +7,13 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
-from .mediola_api import MediolaAPI
+from .mediola_api import MediolaAPI, MediolaAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = MediolaAPI(host, username, password)
 
     # Create coordinator for data updates
-    coordinator = MediolaDataUpdateCoordinator(hass, api, scan_interval)
+    coordinator = MediolaDataUpdateCoordinator(hass, api, scan_interval, entry)
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -213,11 +214,18 @@ async def async_setup_services(hass: HomeAssistant, entry_id: str) -> None:
 class MediolaDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Mediola data from the gateway."""
 
-    def __init__(self, hass: HomeAssistant, api: MediolaAPI, scan_interval: int) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api: MediolaAPI,
+        scan_interval: int,
+        entry: ConfigEntry,
+    ) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=DOMAIN,
             update_interval=timedelta(seconds=scan_interval),
         )
@@ -232,5 +240,10 @@ class MediolaDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch data from Mediola gateway."""
         try:
             return await self.hass.async_add_executor_job(self.api.get_states)
+        except MediolaAuthError as err:
+            # Triggers the reauth flow (new credentials dialog)
+            raise ConfigEntryAuthFailed(
+                "Mediola gateway rejected the credentials"
+            ) from err
         except Exception as err:
             raise UpdateFailed(f"Error communicating with Mediola gateway: {err}")

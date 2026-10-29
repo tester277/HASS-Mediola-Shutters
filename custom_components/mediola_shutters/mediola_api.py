@@ -1,6 +1,8 @@
 """API client for Mediola Gateway."""
 import json
 import logging
+import re
+import time
 import requests
 from typing import List, Dict, Any, Optional
 
@@ -27,6 +29,48 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# (connect timeout, read timeout) in seconds
+REQUEST_TIMEOUT = (5, 10)
+# Number of attempts for fetching states (handles short gateway hiccups)
+GET_STATES_ATTEMPTS = 2
+GET_STATES_RETRY_DELAY = 1.0
+
+_CREDENTIAL_RE = re.compile(r"(XC_(?:USER|PASS)=)[^&\s)'\"]*")
+
+
+def _safe_error(err: Exception) -> str:
+    """Return a short error text without credentials or the request URL."""
+    if isinstance(err, requests.exceptions.ConnectTimeout):
+        return "connection timed out (gateway not reachable)"
+    if isinstance(err, requests.exceptions.ReadTimeout):
+        return "read timed out (gateway did not respond)"
+    if isinstance(err, requests.exceptions.ConnectionError):
+        return "connection error (gateway not reachable)"
+    return f"{type(err).__name__}: {_CREDENTIAL_RE.sub(r'\1***', str(err))}"
+
+
+class MediolaAuthError(Exception):
+    """Raised when the gateway rejects the credentials."""
+
+
+class MediolaGatewayError(Exception):
+    """Raised when the gateway answers with an error (XC_ERR)."""
+
+
+# Gateway error codes for rejected credentials:
+#   {XC_ERR}{"code":"010000"}                        -> wrong user/password
+#   {"XC_ERR":{"code":"000007","msg":"access denied"}} -> access denied
+_AUTH_ERROR_MARKERS = ("010000", "000007", "access denied")
+
+
+def _check_gateway_error(text: str) -> None:
+    """Raise a specific exception if the gateway answered with XC_ERR."""
+    if "XC_ERR" not in text:
+        return
+    if any(marker in text for marker in _AUTH_ERROR_MARKERS):
+        raise MediolaAuthError("Mediola gateway rejected the credentials")
+    raise MediolaGatewayError(f"Mediola gateway returned an error: {text[:120]}")
+
 
 class MediolaAPI:
     """Class to interact with Mediola Gateway."""
@@ -51,28 +95,48 @@ class MediolaAPI:
     def get_states(self) -> List[Dict[str, Any]]:
         """Get current states of all devices from the gateway."""
         url = self._build_url({"XC_FNC": "GetStates"})
-        
+
+        response = None
+        for attempt in range(1, GET_STATES_ATTEMPTS + 1):
+            try:
+                response = requests.get(url, timeout=REQUEST_TIMEOUT)
+                response.raise_for_status()
+                break
+            except requests.exceptions.RequestException as err:
+                if attempt < GET_STATES_ATTEMPTS:
+                    _LOGGER.debug(
+                        "Fetching states from Mediola gateway %s failed "
+                        "(attempt %d/%d): %s",
+                        self.host, attempt, GET_STATES_ATTEMPTS, _safe_error(err),
+                    )
+                    time.sleep(GET_STATES_RETRY_DELAY)
+                    continue
+                _LOGGER.error(
+                    "Error fetching states from Mediola gateway %s: %s",
+                    self.host, _safe_error(err),
+                )
+                # Re-raise without the original message (contains the URL
+                # with credentials) so it cannot leak via the caller's logging.
+                raise requests.exceptions.RequestException(
+                    f"Mediola gateway {self.host}: {_safe_error(err)}"
+                ) from None
+
         try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            
             # Parse response: remove {XC_SUC} prefix and parse JSON
             text = response.text
+            _check_gateway_error(text)
             if text.startswith("{XC_SUC}"):
                 text = text[8:]  # Remove {XC_SUC} prefix
-            
+
             devices = json.loads(text)
-            
-            # Filter only shutter devices (type "WR" or "ER")
+
+            # Filter only shutter devices (type "WR", "ER" or "RT")
             shutters = [
-                d for d in devices 
+                d for d in devices
                 if d.get("type") in [DEVICE_TYPE_WR, DEVICE_TYPE_ER, DEVICE_TYPE_RT]
-                         ]
+            ]
             return shutters
-            
-        except requests.exceptions.RequestException as err:
-            _LOGGER.error("Error fetching states from Mediola gateway: %s", err)
-            raise
+
         except json.JSONDecodeError as err:
             _LOGGER.error("Error parsing response from Mediola gateway: %s", err)
             raise
@@ -115,14 +179,23 @@ class MediolaAPI:
         url = self._build_url(params)
         
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
             
             # Check if response indicates success
+            if "XC_ERR" in response.text:
+                try:
+                    _check_gateway_error(response.text)
+                except (MediolaAuthError, MediolaGatewayError) as err:
+                    _LOGGER.error("Mediola gateway %s: %s", self.host, err)
+                return False
             return "{XC_SUC}" in response.text
             
         except requests.exceptions.RequestException as err:
-            _LOGGER.error("Error sending command to Mediola gateway: %s", err)
+            _LOGGER.error(
+                "Error sending command to Mediola gateway %s: %s",
+                self.host, _safe_error(err),
+            )
             return False
 
     # WIR (Type WR) specific methods
