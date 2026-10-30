@@ -13,28 +13,48 @@
         "data_description": {
           "scan_interval": "Wie oft das Gateway für Statusaktualisierungen abgefragt wird (5-300 Sekunden, Standard: 15)"
         }
+      },
+      "reauth_confirm": {
+        "title": "Zugangsdaten erneuern",
+        "description": "Das Mediola Gateway ({host}) hat die gespeicherten Zugangsdaten abgelehnt. Bitte geben Sie die aktuellen Zugangsdaten ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
       }
     },
     "error": {
       "cannot_connect": "Verbindung zum Mediola Gateway fehlgeschlagen. Bitte überprüfen Sie die IP-Adresse, den Benutzernamen und das Passwort.",
-      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "invalid_auth": "Benutzername oder Passwort wurden vom Gateway abgelehnt."
     },
     "abort": {
-      "already_configured": "Dieses Mediola Gateway ist bereits konfiguriert."
+      "already_configured": "Dieses Mediola Gateway ist bereits konfiguriert.",
+      "reauth_successful": "Die Zugangsdaten wurden aktualisiert."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Mediola Shutters Optionen",
-        "description": "Konfigurieren Sie das Aktualisierungsintervall für die Gateway-Abfrage",
+        "description": "IP-Adresse, Zugangsdaten und Aktualisierungsintervall für das Mediola Gateway anpassen",
         "data": {
+          "host": "IP-Adresse",
+          "username": "Benutzername",
+          "password": "Neues Passwort",
           "scan_interval": "Aktualisierungsintervall (Sekunden)"
         },
         "data_description": {
-          "scan_interval": "Wie oft das Gateway für Statusaktualisierungen abgefragt wird (5-300 Sekunden)"
+          "password": "Leer lassen, um das bisherige Passwort beizubehalten",
+          "scan_interval": "Wie oft das Gateway für Statusaktualisierungsabfragen wird (5-300 Sekunden)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Mediola Gateway fehlgeschlagen. Bitte überprüfen Sie Benutzernamen und Passwort.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "invalid_auth": "Benutzername oder Passwort wurden vom Gateway abgelehnt.",
+      "already_configured": "Ein Gateway mit dieser IP-Adresse ist bereits eingerichtet."
     }
   },
   "services": {
