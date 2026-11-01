@@ -29,6 +29,9 @@ In der Antwort könnt ihr hinter "Type" das Herstellerkürzel sehen. Dieses muss
 2. Kopieren Sie alle Dateien in dieses Verzeichnis:
    ```
    custom_components/mediola_shutters/
+    └── brand/
+       ├── icon.png
+       └── logo.png
    ├── __init__.py
    ├── config_flow.py
    ├── const.py
@@ -59,11 +62,11 @@ In der Antwort könnt ihr hinter "Type" das Herstellerkürzel sehen. Dieses muss
 
 ### Aktualisierungsintervall ändern
 
-Sie können das Aktualisierungsintervall jederzeit ändern:
+Sie können die IP-Adresse, Zugangsdaten und Aktualisierungsintervall für das Mediola Gateway jederzeit anpassen:
 1. Gehe zu **Einstellungen** → **Geräte & Dienste**
 2. Finde "Mediola Shutters"
 3. Klicke auf **Konfigurieren** (⚙️ Symbol)
-4. Ändere das Aktualisierungsintervall
+4. Prüfe IP-Adresse, Zugangsdaten und Aktualisierungsintervall und ändere ggf.
 5. Die Integration wird automatisch neu geladen
 
 ## 📊 Entitäten
