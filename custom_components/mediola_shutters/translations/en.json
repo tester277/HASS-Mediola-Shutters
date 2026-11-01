@@ -13,28 +13,48 @@
         "data_description": {
           "scan_interval": "How often to poll the gateway for status updates (5-300 seconds, default: 15)"
         }
+      },
+      "reauth_confirm": {
+        "title": "Update credentials",
+        "description": "The Mediola Gateway ({host}) rejected the stored credentials. Please enter the current credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to the Mediola Gateway. Please check the IP address, username and password.",
-      "unknown": "Unexpected error occurred. Please try again."
+      "unknown": "Unexpected error occurred. Please try again.",
+      "invalid_auth": "The gateway rejected the username or password."
     },
     "abort": {
-      "already_configured": "This Mediola Gateway is already configured."
+      "already_configured": "This Mediola Gateway is already configured.",
+      "reauth_successful": "The credentials have been updated."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Mediola Shutters Options",
-        "description": "Configure the update interval for polling the gateway",
+        "description": "Change the IP address, credentials and update interval for the Mediola Gateway",
         "data": {
+          "host": "IP Address",
+          "username": "Username",
+          "password": "New password",
           "scan_interval": "Update interval (seconds)"
         },
         "data_description": {
+          "password": "Leave empty to keep the current password",
           "scan_interval": "How often to poll the gateway for status updates (5-300 seconds)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Mediola Gateway. Please check username and password.",
+      "unknown": "Unexpected error occurred. Please try again.",
+      "invalid_auth": "The gateway rejected the username or password.",
+      "already_configured": "A gateway with this IP address is already configured."
     }
   },
   "services": {

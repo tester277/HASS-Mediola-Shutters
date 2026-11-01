@@ -46,6 +46,7 @@
         },
         "data_description": {
           "password": "Leer lassen, um das bisherige Passwort beizubehalten",
+          "scan_interval": "Wie oft das Gateway für Statusaktualisierungen abgefragt wird (5-300 Sekunden)"
           "scan_interval": "Wie oft das Gateway für Statusaktualisierungsabfragen wird (5-300 Sekunden)"
         }
       }
